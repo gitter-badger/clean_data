@@ -23,7 +23,7 @@ Stream onChange(Iterable sources,{Duration every: Duration.ZERO}) {
   start = () {
     listening = true;
     for (var o in sources) {
-      subscriptions.add(o.onChange.listen((_) => notify()));
+      subscriptions.add(((o is Stream)? o : o.onChange).listen((_) => notify()));
     }
   };
 
