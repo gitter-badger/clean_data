@@ -8,28 +8,28 @@ part of clean_data;
  * Observable object, which represents single primitive in Data.
  *
  */
-class DataReference extends Object with ChangeNotificationsMixin, ChangeValueNotificationsMixin{
+class DataReference<V> extends Object with ChangeNotificationsMixin, ChangeValueNotificationsMixin{
 
   /**
    * Encapsulated value
    */
-  dynamic _value;
+  V _value;
 
   StreamSubscription _onDataChangeListener, _onDataChangeSyncListener;
 
   /**
    * Return value of a primitive type.
    */
-  get value => _value;
+  V get value => _value;
 
   /**
    * Change value of primitive type and notify listeners.
    */
-  set value(newValue) {
+  set value(V newValue) {
     changeValue(newValue);
   }
 
-  _silentChangeValue(newValue){
+  _silentChangeValue(V newValue){
     assert(newValue is! DataReference);
     _value = newValue;
 
@@ -43,10 +43,10 @@ class DataReference extends Object with ChangeNotificationsMixin, ChangeValueNot
     }
 
     if(newValue is ChangeNotificationsMixin) {
-      _onDataChangeSyncListener = newValue.onChangeSync.listen((changeEvent) {
+      _onDataChangeSyncListener = (newValue as ChangeNotificationsMixin).onChangeSync.listen((changeEvent) {
         _onChangeSyncController.add(changeEvent);
       });
-      _onDataChangeListener = newValue.onChange.listen((changeEvent) {
+      _onDataChangeListener = (newValue as ChangeNotificationsMixin).onChange.listen((changeEvent) {
         // due to its lazy initialization, _onChangeController does not need to
         // exist; if not ignore the change, no one is listening!
         if (_onChangeController != null) {
@@ -57,7 +57,7 @@ class DataReference extends Object with ChangeNotificationsMixin, ChangeValueNot
 
   }
 
-  changeValue(newValue, {author: null}) {
+  changeValue(V newValue, {author: null}) {
     _markChanged(this._value, newValue);
     _silentChangeValue(newValue);
     _notify(author: author);
@@ -66,13 +66,13 @@ class DataReference extends Object with ChangeNotificationsMixin, ChangeValueNot
   /**
    * Creates new DataReference with [value]
    */
-  DataReference(value, [this._onDispose = null]) {
+  DataReference(V value, [this._onDispose = null]) {
     _silentChangeValue(value);
     _clearChanges();
     _clearChangesSync();
   }
 
-  final _onDispose;
+  Function _onDispose;
 
   void dispose() {
     _dispose();
