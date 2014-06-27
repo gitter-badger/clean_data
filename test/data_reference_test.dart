@@ -6,7 +6,6 @@ library data_reference_test;
 
 import 'package:unittest/unittest.dart';
 import 'package:clean_data/clean_data.dart';
-import 'package:unittest/mock.dart';
 import 'dart:async';
 import 'matchers.dart' as matchers;
 

@@ -1,5 +1,8 @@
 part of clean_data;
 
+isActive(StreamController sc) {
+  return sc!=null && !sc.isClosed;
+}
 
 abstract class ChangeNotificationsMixin {
 
@@ -28,7 +31,7 @@ abstract class ChangeNotificationsMixin {
   /**
    * Used to propagate change events to the outside world.
    */
-   StreamController<dynamic> _onBeforeAddedController;
+  StreamController<dynamic> _onBeforeAddedController;
   StreamController<dynamic> _onBeforeRemovedController;
 
   /**
@@ -89,15 +92,14 @@ abstract class ChangeNotificationsMixin {
     Timer.run(() {
       if (_change != null) {
         _onBeforeNotify();
-        if(_onChangeController != null) _onChangeController.add(_change);
+        if(isActive(_onChangeController)) _onChangeController.add(_change);
         _clearChanges();
       }
     });
   }
 
   void _closeChangeStreams(){
-    if(_onChangeController != null) _onChangeController.close();
-    _onChangeSyncController.close();
+    if(isActive(_onChangeController)) _onChangeSyncController.close();
   }
 
 }
@@ -131,7 +133,7 @@ abstract class ChangeChildNotificationsMixin implements ChangeNotificationsMixin
     if (_changeSync == null) {
       _changeSync = new ChangeSet();
     }
-    if(_onBeforeAddedController != null) _onBeforeAddedController.add(key);
+    if(isActive(_onBeforeAddedController)) _onBeforeAddedController.add(key);
     _changeSync.markAdded(key, value);
     _change.markAdded(key, value);
   }
@@ -143,7 +145,7 @@ abstract class ChangeChildNotificationsMixin implements ChangeNotificationsMixin
     if (_changeSync == null) {
       _changeSync = new ChangeSet();
     }
-    if(_onBeforeRemovedController != null) _onBeforeRemovedController.add(key);
+    if(isActive(_onBeforeRemovedController)) _onBeforeRemovedController.add(key);
     _change.markRemoved(key, value);
     _changeSync.markRemoved(key, value);
   }
@@ -156,9 +158,9 @@ abstract class ChangeChildNotificationsMixin implements ChangeNotificationsMixin
       _changeSync = new ChangeSet();
     }
     if(change is Change) {
-      if(change.oldValue == undefined && _onBeforeAddedController != null)
+      if(change.oldValue == undefined && isActive(_onBeforeAddedController))
         _onBeforeAddedController.add(key);
-      if(change.newValue == undefined && _onBeforeRemovedController != null)
+      if(change.newValue == undefined && isActive(_onBeforeRemovedController))
         _onBeforeRemovedController.add(key);
     }
     _change.markChanged(key, change);
@@ -194,8 +196,8 @@ abstract class ChangeChildNotificationsMixin implements ChangeNotificationsMixin
 
   void _dispose() {
     _closeChangeStreams();
-    if(_onBeforeAddedController != null) _onBeforeAddedController.close();
-    if(_onBeforeRemovedController != null) _onBeforeRemovedController.close();
+    if(isActive(_onBeforeAddedController)) _onBeforeAddedController.close();
+    if(isActive(_onBeforeRemovedController)) _onBeforeRemovedController.close();
     if(_dataListeners != null) _dataListeners.forEach((K, V) => V.cancel());
   }
 }
