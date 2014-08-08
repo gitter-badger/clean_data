@@ -136,6 +136,12 @@ class ReactiveValue {
 // longer than MAX_SAFE_DURATION.
 const MAX_SAFE_DURATION = const Duration(days: 10);
 
+// When you shedule something in time in future and this code is called later
+// than that thime this constant handle this. This is few miliseconds after you
+// shedule something and happing somethimes in ie. So we set safety bound one second so
+// your callback will be executed imideatly.
+const MIN_SAFE_DURATION = const Duration(seconds: -1);
+
 /**
  * Schedule [callback] invocation for some particular [DateTime] in future.
  *
@@ -148,8 +154,9 @@ Timer scheduleExpiration(DateTime expirationTime, callback) {
   // 23 days. For this reason [scheduleExpiration] do not schedule [Duration]s
   // longer than MAX_SAFE_DURATION.
   if (duration > MAX_SAFE_DURATION) duration = MAX_SAFE_DURATION;
+  if (duration < Duration.ZERO && duration > MIN_SAFE_DURATION) duration = Duration.ZERO;
 
-  if (duration < new Duration(microseconds: 0)) {
+  if (duration < Duration.ZERO) {
     throw new ArgumentError("Expiration time from past: $expirationTime");
   }
   return new Timer(duration, callback);
