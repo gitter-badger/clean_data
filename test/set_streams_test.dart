@@ -5,26 +5,10 @@
 library set_streams_test;
 
 import 'package:unittest/unittest.dart';
-import 'package:unittest/mock.dart';
+import 'package:mock/mock.dart';
 import 'package:clean_data/clean_data.dart';
 import 'dart:async';
 import 'months.dart';
-import 'matchers.dart' as matchers;
-
-var equals = matchers.equals;
-
-addedEquals(ChangeSet changeSet, Iterable added){
-  expect(changeSet.addedItems, unorderedEquals(added));
-  expect(changeSet.strictlyChanged, isEmpty);
-  expect(changeSet.removedItems, isEmpty);
-}
-
-removedEquals(ChangeSet changeSet, Iterable removed){
-  expect(changeSet.addedItems, isEmpty);
-  expect(changeSet.strictlyChanged, isEmpty);
-  expect(changeSet.removedItems, unorderedEquals(removed));
-}
-
 
 void main() {
 
@@ -56,14 +40,9 @@ void main() {
 
       // then
       mock.log.verify(happenedOnce);
-      var event = mock.log.first.args.first;
-      expect(event['change'].changedItems[january].addedItems, equals(['temperature']));
 
-      winterSet.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          january: new ChangeSet({
-            'temperature': new Change(undefined, -10)
-          })})));
+      winterSet.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, equals([january]));
       }));
     });
 
@@ -77,10 +56,8 @@ void main() {
       january['temperature'] = -10;
 
       // then
-      winterSet.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          january: new Change(january, undefined)
-        })));
+      winterSet.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, equals([january]));
       }));
     });
 
@@ -98,13 +75,8 @@ void main() {
       december['temperature'] = 5;
 
       // then
-      winterSet.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          january: new Change(january, undefined),
-          fantasyMonth: new Change(undefined, fantasyMonth),
-          february: new ChangeSet({'temperature': new Change(undefined, -15)}),
-          december: new ChangeSet({'temperature': new Change(undefined, 5)})
-        })));
+      winterSet.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, unorderedEquals([january, february, fantasyMonth, december]));
       }));
     });
 
@@ -119,9 +91,8 @@ void main() {
       winterSet.add(january);
 
       // then
-      winterSet.onChange.listen(expectAsync1((ChangeSet event) {
-        expect(event, equals(new ChangeSet(
-            {january: new Change(january, january)})));
+      winterSet.onChange.listen(expectAsync((Iterable event) {
+        expect(event, equals([january]));
       }));
     });
 
@@ -138,25 +109,8 @@ void main() {
       });
 
       // then
-      winterSet.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet.removedItems, equals([january]));
-      }));
-    });
-
-    test('change on data object propagates correctly to the set. (T28)', () {
-
-      // given
-      var winterSet = new DataSet.from([december, january,
-                                                      february]);
-
-      // when
-      february.remove('days');
-      february['days'] = 29;
-
-      // then
-      winterSet.onChange.listen(expectAsync1((ChangeSet event) {
-        expect(event, equals(new ChangeSet(
-            {february: new ChangeSet({'days': new Change(28, 29)})})));
+      winterSet.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, equals([january]));
       }));
     });
 
@@ -177,18 +131,18 @@ void main() {
       //when
       selection.removeAll(winter);
       //then
-      removedEquals(changeSet, [february]);
+      expect(changeSet, equals([february]));
       //when
       selection.removeAll(spring);
       //then
-      removedEquals(changeSet, spring);
+      expect(changeSet, unorderedEquals(spring));
       //when
       changeSet = null;
       selection.removeAll(summer);
       //then
       expect(changeSet, isNull);
       expect(count, equals(2));
-      selection.onChangeSync.listen(expectAsync1((_){}, count:0));
+      selection.onChangeSync.listen(expectAsync((_){}, count:0));
     });
 
     test('onChange produces correct results when removeAll multiple elements multiple times ', () {
@@ -202,8 +156,8 @@ void main() {
       selection.removeAll(spring);
 
       //then
-      selection.onChange.listen(expectAsync1((changeSet){
-             removedEquals(changeSet, [february, march, april, may]);
+      selection.onChange.listen(expectAsync((changeSet){
+             expect(changeSet, unorderedEquals([february, march, april, may]));
       }, count : 1));
     });
 
@@ -225,18 +179,18 @@ void main() {
       //when
       selection.addAll(winter);
       //then
-      addedEquals(changeSet, [december, january]);
+      expect(changeSet, unorderedEquals( [december, january]));
       //when
       selection.addAll(summer);
       //then
-      addedEquals(changeSet, summer);
+      expect(changeSet, unorderedEquals(summer));
       //when
       changeSet=null;
       selection.addAll(summer);
       //then
       expect(changeSet, isNull);
       expect(count, equals(2));
-      selection.onChangeSync.listen(expectAsync1((_){}, count:0));
+      selection.onChangeSync.listen(expectAsync((_){}, count:0));
     });
 
     test('onChange produces correct results when addAll multiple elements multiple times (T43)', () {
@@ -251,8 +205,8 @@ void main() {
       selection.addAll(summer);
 
       //then
-      selection.onChange.listen(expectAsync1((changeSet){
-             addedEquals(changeSet, [december, january, june, july, august]);
+      selection.onChange.listen(expectAsync((changeSet){
+        expect(changeSet, unorderedEquals([december, january, june, july, august]));
           },count : 1));
     });
 

@@ -5,13 +5,10 @@
 library data_set_test;
 
 import 'package:unittest/unittest.dart';
-import 'package:unittest/mock.dart';
+import 'package:mock/mock.dart';
 import 'package:clean_data/clean_data.dart';
 import 'dart:async';
 import 'months.dart';
-import 'matchers.dart' as matchers;
-
-var equals = matchers.equals;
 
 void main() {
 
@@ -366,7 +363,7 @@ void main() {
       var winterSet = new DataSet.from([december, january,
       february]);
       //then
-      winterSet.onChangeSync.listen((changeSet) => guardAsync(() => expect(true, isFalse, reason: 'Should not be reached')));
+      winterSet.onChangeSync.listen((changeSet) => expectAsync(() => expect(true, isFalse, reason: 'Should not be reached'), count: 0));
 
       // when
       winterSet.dispose();
@@ -464,12 +461,8 @@ void main() {
       february['days'] = 29;
 
       //then
-      seasons.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'winter': new ChangeSet({
-            february: new ChangeSet({'days': new Change(28, 29)})
-          })
-        })));
+      seasons.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, equals(['winter']));
       }));
     });
 
@@ -486,12 +479,8 @@ void main() {
       february['days'] = 29;
 
       //then
-      seasons.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          winterSet: new ChangeSet({
-            february: new ChangeSet({'days': new Change(28, 29)})
-          })
-        })));
+      seasons.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, equals([winterSet]));
       }));
     });
 

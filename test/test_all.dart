@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'matchers.dart' as matchers_test;
 import 'data_map_test.dart' as data_map_test;
 import 'data_list_test.dart' as data_list_test;
 import 'data_set_test.dart' as data_set_test;
@@ -14,13 +13,13 @@ import 'cleanify_test.dart' as cleanify_test;
 import 'on_change_test.dart' as on_change_test;
 import 'misc.dart' as misc_test;
 
-import 'data_sets/transformed_set_view_test.dart' as transformed_test;
-import 'data_sets/filtered_set_view_test.dart' as filtered_test;
-import 'data_sets/unioned_set_view_test.dart' as unioned_test;
-import 'data_sets/intersected_set_view_test.dart' as intersected_test;
-import 'data_sets/excepted_set_view_test.dart' as excepted_test;
-import 'data_sets/mapped_set_view_test.dart' as mapped_test;
-import 'data_sets/sorted_list_view_test.dart' as sorted_test;
+//import 'data_sets/transformed_set_view_test.dart' as transformed_test;
+//import 'data_sets/filtered_set_view_test.dart' as filtered_test;
+//import 'data_sets/unioned_set_view_test.dart' as unioned_test;
+//import 'data_sets/intersected_set_view_test.dart' as intersected_test;
+//import 'data_sets/excepted_set_view_test.dart' as excepted_test;
+//import 'data_sets/mapped_set_view_test.dart' as mapped_test;
+//import 'data_sets/sorted_list_view_test.dart' as sorted_test;
 import 'package:unittest/unittest.dart';
 import 'package:unittest/vm_config.dart';
 
@@ -31,7 +30,6 @@ main() {
 run(configuration) {
   unittestConfiguration = configuration;
 
-  matchers_test.main();
   data_map_test.main();
   data_list_test.main();
   data_set_test.main();
@@ -41,13 +39,14 @@ run(configuration) {
   on_change_test.main();
 
   // set views test
-  transformed_test.main();
-  filtered_test.main();
-  unioned_test.main();
-  intersected_test.main();
-  excepted_test.main();
-  mapped_test.main();
-  sorted_test.main();
+//  transformed_test.main();
+//  filtered_test.main();
+//  unioned_test.main();
+//  intersected_test.main();
+//  excepted_test.main();
+//  mapped_test.main();
+//  sorted_test.main();
+
   hash_index_test.main();
 
   cleanify_test.main();

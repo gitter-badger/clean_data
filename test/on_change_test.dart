@@ -9,8 +9,9 @@ import 'package:mock/mock.dart';
 import 'package:clean_data/clean_data.dart';
 import 'dart:async';
 
-class MockFunction extends Mock implements Function {}
-class MockTimer extends Mock implements Timer {}
+class MockFunction extends Mock implements Function { noSuchMethod(inv) => super.noSuchMethod(inv); }
+
+class MockTimer extends Mock implements Timer { noSuchMethod(inv) => super.noSuchMethod(inv); }
 
 class OnChangeMock {
   bool canceled = true;
@@ -131,12 +132,13 @@ void main() {
       var expirationTime = new DateTime(2014, 1, 1, 13);
 
       recalculatedValue = new ReactiveValue(2, expiration: expirationTime);
-
       var reactor = new Reactor.config(ref, [ref1, ref2], calculation,
                                        customSchedule);
 
       //then
       var logs = customSchedule.getLogs(callsTo('call', expirationTime, anything));
+
+      logs.first;
       logs.verify(happenedOnce);
       var recalculate = logs.first.args[1];
 

@@ -6,6 +6,8 @@ homepage: http://cleandart.github.io/clean_data/
 environment:
   sdk: '>=0.8.10+6 <2.0.0'
 documentation: http://cleandart.github.io/clean_data/
+dependencies:
+  mock: any
 dev_dependencies:
   hop: any
-  unittest: '>=0.10.0'
+  unittest: '>=0.11.0'

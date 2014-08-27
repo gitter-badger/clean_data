@@ -6,11 +6,8 @@ library data_map_test;
 
 import 'package:unittest/unittest.dart';
 import 'package:clean_data/clean_data.dart';
-import 'package:unittest/mock.dart';
+import 'package:mock/mock.dart';
 import 'dart:async';
-import 'matchers.dart' as matchers;
-
-var equals = matchers.equals;
 
 void main() {
 
@@ -103,18 +100,15 @@ void main() {
 
       // then sync onChange propagates information about all changes and
       // removals
-      ChangeSet expectedChangeSet = new ChangeSet({
-        'key1': new Change('value1', undefined),
-        'key2': new Change('value2', undefined)
-      });
+
       mock.getLogs().verify(happenedOnce);
       var event = mock.getLogs().first.args[0];
       expect(event['author'], equals('John Doe'));
-      expect(event['change'], equals(expectedChangeSet));
+      expect(event['change'], equals(['key1', 'key2']));
 
       // but async onChange drops information about changes in removed items.
-      dataObj.onChange.listen(expectAsync1((changeSet) {
-        expect(changeSet, equals(expectedChangeSet));
+      dataObj.onChange.listen(expectAsync((changeSet) {
+        expect(changeSet, equals(['key1', 'key2']));
       }));
     });
 
@@ -131,20 +125,16 @@ void main() {
       // then sync onChange propagates information about all changes and
       // adds
 
-      ChangeSet expectedChangeSet = new ChangeSet({
-        'key1': new Change(undefined, 'value1'),
-        'key2': new Change(undefined, 'value2'),
-        'key3': new Change(undefined, 'value3')
-      });
+
 
       mock.getLogs().verify(happenedOnce);
       var event = mock.getLogs().first.args.first;
       expect(event['author'], equals('John Doe'));
-      expect(event['change'], equals(expectedChangeSet));
+      expect(event['change'], equals(['key1', 'key2', 'key3']));
 
       // but async onChange drops information about changes in added items.
-      dataObj.onChange.listen(expectAsync1((changeSet) {
-        expect(changeSet, equals(expectedChangeSet));
+      dataObj.onChange.listen(expectAsync((changeSet) {
+        expect(changeSet, equals(['key1', 'key2', 'key3']));
       }));
     });
 
@@ -156,10 +146,8 @@ void main() {
       dataObj['key'] = 'value';
 
       // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'key': new Change(undefined, 'value')
-        })));
+      dataObj.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, equals(['key']));
       }));
 
     });
@@ -177,9 +165,7 @@ void main() {
       mock.getLogs().verify(happenedOnce);
       var event = mock.getLogs().first.args[0];
       expect(event['author'], equals('John Doe'));
-      expect(event['change'], equals(new ChangeSet({
-        'key': new Change(undefined, 'value')
-      })));
+      expect(event['change'], equals(['key']));
     });
 
     test('listen synchronously on multiple {key, value} added. (T10)', () {
@@ -196,8 +182,7 @@ void main() {
       mock.getLogs().verify(happenedExactly(2));
       var event1 = mock.getLogs().logs[0].args.first;
       var event2 = mock.getLogs().logs[1].args.first;
-      expect(event1['change'].addedItems, equals(['key1']));
-      expect(event2['change'].addedItems, equals(['key2']));
+      expect(event1['change'], equals(['key1']));
     });
 
     test('listen on {key, value} removed. (T11)', () {
@@ -209,10 +194,8 @@ void main() {
       dataObj.remove('key');
 
       // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'key': new Change('value', undefined)
-        })));
+      dataObj.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, equals(['key']));
       }));
 
     });
@@ -230,9 +213,7 @@ void main() {
       mock.getLogs().verify(happenedOnce);
       var event = mock.getLogs().logs.first.args.first;
       expect(event['author'], equals('John Doe'));
-      expect(event['change'], equals(new ChangeSet({
-        'key': new Change('value', undefined)
-      })));
+      expect(event['change'], equals(['key']));
     });
 
     test('listen on {key, value} changed. (T13)', () {
@@ -244,11 +225,9 @@ void main() {
       dataObj['key'] = 'newValue';
 
       // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet event) {
+      dataObj.onChange.listen(expectAsync((Iterable event) {
         var ref = dataObj.ref('key');
-        expect(event, equals(new ChangeSet({
-          'key': new Change('oldValue', 'newValue')
-        })));
+        expect(event, equals(['key']));
       }));
     });
 
@@ -263,63 +242,8 @@ void main() {
       dataObj['key3'] = 'value3';
 
       // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'key1': new Change('value1', 'newValue1'),
-          'key2': new Change('value2', undefined),
-          'key3': new Change(undefined, 'value3')})));
-      }));
-    });
-
-    test('when property is added then changed, only addition is in the [ChangeSet]. (T15)', () {
-      // given
-      var data = {'key1': 'value1', 'key2': 'value2'};
-      DataMap<String, String> dataObj = new DataMap.from(data);
-
-      // when
-      dataObj['key3'] = 'John Doe';
-      dataObj['key3'] = 'John Doe II.';
-
-      // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'key3': new Change(undefined, 'John Doe II.')
-        })));
-      }));
-    });
-
-    test('when existing property is removed then re-added, this is a change. (T16)', () {
-      // given
-      var data = {'key1': 'value1', 'key2': 'value2'};
-      var dataObj = new DataMap.from(data);
-
-      // when
-      dataObj.remove('key1');
-      dataObj['key1'] = 'John Doe II.';
-
-      // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'key1': new Change('value1', 'John Doe II.')
-        })));
-      }));
-    });
-
-    test('when property is changed then removed, only deletion is in the [ChangeSet]. (T17)', () {
-      // given
-      var data = {'key1': 'value1', 'key2': 'value2'};
-      var dataObj = new DataMap.from(data);
-
-      dataObj['key1'] = 'John Doe';
-
-      // when
-      dataObj.remove('key1');
-
-      // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'key1': new Change('value1', undefined)
-        })));
+      dataObj.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, unorderedEquals(['key1', 'key2', 'key3']));
       }));
     });
 
@@ -333,10 +257,8 @@ void main() {
       dataObj.remove('key3');
 
       // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet event) {
-        expect(event, equals(new ChangeSet({
-          'key3': new Change(undefined, undefined)
-        })));
+      dataObj.onChange.listen(expectAsync((Iterable event) {
+        expect(event, unorderedEquals(['key3']));
       }));
      });
 
@@ -354,17 +276,11 @@ void main() {
       mock.getLogs().verify(happenedOnce);
       var event = mock.getLogs().first.args[0];
       expect(event['author'], equals('John Doe'));
-      expect(event['change'], equals(new ChangeSet({
-        'key1': new Change('value1', undefined),
-        'key2': new Change('value2', undefined)
-      })));
+      expect(event['change'], unorderedEquals(['key1', 'key2']));
       expect(dataObj.isEmpty, isTrue);
 
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'key1': new Change('value1', undefined),
-          'key2': new Change('value2', undefined)
-        })));
+      dataObj.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, unorderedEquals(['key1', 'key2']));
       }));
 
     });
@@ -408,10 +324,8 @@ void main() {
       // then
       expect(dataObj['key1'], equals('value1'));
       expect(dataObj['key2'], equals(''));
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(new ChangeSet({
-          'key2': new Change(undefined, '')
-        })));
+      dataObj.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, unorderedEquals(['key2']));
       }));
     });
 
@@ -442,8 +356,8 @@ void main() {
       dataObj['child']['name'] = 'John Doe';
 
       // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet event) {
-        expect(event.changedItems['child'].addedItems, equals(['name']));
+      dataObj.onChange.listen(expectAsync((Iterable event) {
+        expect(event, unorderedEquals(['child']));
       }));
     });
 
@@ -505,16 +419,11 @@ void main() {
 
       var changeSet = event['change'];
 
-      expect(event['change'], equals(new ChangeSet({
-        'child1': new Change(undefined, data['child1']),
-        'child2': new Change(undefined, data['child2']),
-        'child3': new Change(undefined, data['child3'])
-      })));
+      expect(event['change'], unorderedEquals(['child1','child2','child3']));
 
       // but async onChange drops information about changes in added items.
-      dataObj.onChange.listen(expectAsync1((changeSet) {
-        expect(changeSet.addedItems, unorderedEquals(data.keys));
-        expect(changeSet.removedItems.isEmpty, isTrue);
+      dataObj.onChange.listen(expectAsync((changeSet) {
+        expect(changeSet, unorderedEquals(data.keys));
       }));
     });
 
@@ -529,18 +438,14 @@ void main() {
       dataObj.removeAll(keysToRemove, author: 'John Doe');
 
       // then
-      ChangeSet expected = new ChangeSet({
-        'child1': new Change(data['child1'],undefined),
-        'child2': new Change(data['child2'],undefined),
-      });
       mock.getLogs().verify(happenedOnce);
       var event = mock.getLogs().first.args[0];
       expect(event['author'], equals('John Doe'));
-      expect(event['change'], equals(expected));
+      expect(event['change'], equals(keysToRemove));
 
       // but async onChange drops information about changes in removed items.
-      dataObj.onChange.listen(expectAsync1((ChangeSet changeSet) {
-        expect(changeSet, equals(expected));
+      dataObj.onChange.listen(expectAsync((Iterable changeSet) {
+        expect(changeSet, equals(keysToRemove));
       }));
     });
 
@@ -556,10 +461,8 @@ void main() {
       dataObj.add('child', childNew);
 
       // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet event) {
-        expect(event, equals(new ChangeSet({
-          'child': new Change(childOld, childNew)
-        })));
+      dataObj.onChange.listen(expectAsync((Iterable event) {
+        expect(event, equals(['child']));
       }));
     });
 
@@ -579,7 +482,7 @@ void main() {
       });
 
       // then
-      future.then(expectAsync1((_) {
+      future.then(expectAsync((_) {
         onChange.getLogs().verify(happenedOnce);
       }));
     });
@@ -590,8 +493,8 @@ void main() {
       data['name'] = new DataMap();
       data['name']['first'] = 'Guybrush';
 
-      data.onChange.listen(expectAsync1((change){
-        expect(change.equals(new ChangeSet({'name': new Change(undefined, data['name'])})), isTrue);
+      data.onChange.listen(expectAsync((change){
+        expect(change, equals(['name']));
       }));
     });
   });
@@ -657,29 +560,6 @@ void main() {
       //then
       expect(ref1, isNot(equals(ref2)));
     });
-
-    test('are not passed in Change / ChangeSet. (T5)', () {
-      // given
-      var childOld = new DataMap();
-      var childNew = new DataMap();
-      var dataObj = new DataMap.from({'child': childOld});
-      var onChange = new Mock();
-
-      // when
-      DataReference refOld = dataObj.ref('child');
-      dataObj.remove('child');
-      dataObj.add('child', childNew);
-      DataReference refNew = dataObj.ref('child');
-
-      // then
-      dataObj.onChange.listen(expectAsync1((ChangeSet event) {
-        expect(event.changedItems.keys, unorderedEquals(['child']));
-
-        Change change = event.changedItems['child'];
-        expect(change.oldValue, equals(refOld.value));
-        expect(change.newValue, equals(refNew.value));
-      }));
-    });
   });
 
   test('listen on nested list change (this was failing)', (){
@@ -687,9 +567,8 @@ void main() {
 
     y['credit'] = 5;
     y['lineup']['1'][0] = 11;
-    y.onChange.listen(expectAsync1((change){
-      expect(change, equals(new ChangeSet({'credit': new Change(10, 5),
-        'lineup': new ChangeSet({'1': new ChangeSet({0: new Change(null, 11)})})})));
+    y.onChange.listen(expectAsync((change){
+      expect(change, unorderedEquals(['credit', 'lineup']));
     }));
     return new Future.delayed(new Duration(milliseconds: 20));
 
