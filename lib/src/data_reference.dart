@@ -58,7 +58,7 @@ class DataReference<V> extends Object with ChangeNotificationsMixin, ChangeValue
   }
 
   changeValue(V newValue, {author: null}) {
-    _markChanged(this._value, newValue);
+    _markChanged();
     _silentChangeValue(newValue);
     _notify(author: author);
   }

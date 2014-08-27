@@ -134,13 +134,13 @@ class DataMap<K, V> extends DataMapView<K, V> implements Map<K, V> {
         if(_fields[key] is DataReference)
           _fields[key].changeValue(value, author: author);
         else {
-          _markChanged(key, new Change(_fields[key], value));
+          _markChanged(key);
           _removeOnDataChangeListener(key);
           if(value is ChangeNotificationsMixin) _addOnDataChangeListener(key, value);
           _fields[key] = value;
         }
       } else {
-        _markAdded(key, value);
+        _markChanged(key, added: true);
         if(value is ChangeNotificationsMixin) _addOnDataChangeListener(key, value);
         _fields[key] = value;
       }
@@ -174,7 +174,7 @@ class DataMap<K, V> extends DataMapView<K, V> implements Map<K, V> {
     var removed = [];
     for (var key in keys) {
       if(_fields.containsKey(key)){
-        _markRemoved(key, this[key]);
+        _markChanged(key, removed: true);
         removed.add(_fields.remove(key));
       }
       _removeOnDataChangeListener(key);

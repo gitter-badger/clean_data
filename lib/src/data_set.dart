@@ -61,11 +61,12 @@ abstract class DataSetView<V> extends Object
    * (Re)indexes all existing data objects into [prop] index.
    */
   void _rebuildIndex(String prop) {
-    for (dynamic d in this) {
-      if (d is DataMapView && d.containsKey(prop)) {
-        _index[prop].add(d[prop], d);
-      }
-    }
+    return;
+//    for (dynamic d in this) {
+//      if (d is DataMapView && d.containsKey(prop)) {
+//        _index[prop].add(d[prop], d);
+//      }
+//    }
   }
 
   /**
@@ -76,28 +77,11 @@ abstract class DataSetView<V> extends Object
 
     // TODO: think about this.
     _indexListenerSubscription = this.onChangeSync.listen((Map changes) {
-      ChangeSet cs = changes['change'];
+      Set cs = changes['change'];
 
       // scan for each indexed property and reindex changed items
       for (String indexProp in _index.keys) {
-        cs.addedItems.forEach((d) {
-          if (d is DataMapView && d.containsKey(indexProp)) {
-            _index[indexProp].add(d[indexProp], d);
-          }
-        });
-
-        cs.removedItems.forEach((d) {
-          if (d is DataMapView && d.containsKey(indexProp)) {
-            _index[indexProp].remove(d[indexProp], d);
-          }
-        });
-
-        cs.strictlyChanged.forEach((d, css) {
-          if (d is DataMapView && d.containsKey(indexProp) && css.changedItems.containsKey(indexProp)) {
-            _index[indexProp].remove(css.changedItems[indexProp].oldValue, d);
-            _index[indexProp].add(css.changedItems[indexProp].newValue, d);
-          }
-        });
+        //TODO: do something
       }
     });
   }
@@ -109,7 +93,7 @@ abstract class DataSetView<V> extends Object
     if (!_index.containsKey(property)) {
       throw new NoIndexException('Property $property is not indexed.');
     }
-    return _index[property][value];
+    return _data.where((e) =>  e is Map  && e[property] == value);
   }
 
   // ============================ /index ======================
@@ -207,7 +191,7 @@ abstract class DataSetView<V> extends Object
     elements.forEach((data) {
       var cdata = cleanify(data);
       if(!_data.contains(cdata)){
-        _markAdded(cdata, cdata);
+        _markChanged(cdata, added: true);
         _data.add(cdata);
         if(cdata is ChangeNotificationsMixin) {
           _addOnDataChangeListener(cdata, cdata);
@@ -233,7 +217,7 @@ abstract class DataSetView<V> extends Object
   void _removeAll(Iterable toBeRemoved, {author: null}) {
     toBeRemoved.forEach((data) {
       if (_data.contains(data)) {
-        _markRemoved(data, data);
+        _markChanged(data, removed: true);
         if (data is ChangeNotificationsMixin) {
           _removeOnDataChangeListener(data);
         }
@@ -307,12 +291,12 @@ class DataSet<V> extends DataSetView<V>
   /**
    * Removes all objects that have [property] equal to [value] from this set.
    */
-  Iterable removeBy(String property, V value, {author: null}) {
+  void removeBy(String property, V value, {author: null}) {
     if (!_index.containsKey(property)) {
       throw new NoIndexException('Property $property is not indexed.');
     }
 
-    this._removeAll(_index[property][value], author: author);
+    this._removeAll(findBy(property, value).toList(), author: author);
   }
 
   /**

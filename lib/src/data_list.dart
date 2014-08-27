@@ -27,13 +27,11 @@ abstract class DataListView<V> extends Object with ChangeNotificationsMixin, Cha
   _add(dynamic value) {
     _list.add(value);
     if(value is ChangeNotificationsMixin) _addOnDataChangeListener(_list.length-1, value);
-    _markAdded(_list.length - 1, this[_list.length - 1]);
+    _markChanged(_list.length - 1, added: true);
   }
 
   _set(key, dynamic value) {
-    Change change = new Change();
-    if(value is DataReference) _markChanged(key, new Change(this[key], value.value));
-    else _markChanged(key, new Change(this[key], value));
+    _markChanged(key);
     _removeOnDataChangeListener(key);
     _list[key] = value;
     if(value is ChangeNotificationsMixin) _addOnDataChangeListener(key, value);
@@ -43,7 +41,7 @@ abstract class DataListView<V> extends Object with ChangeNotificationsMixin, Cha
     if(index < 0 || index >= _list.length) return false;
     _removeOnDataChangeListener(_list.length - 1);
     this._setRange(index, this.length - 1, _list, index + 1);
-    _markRemoved(length-1, this[length - 1]);
+    _markChanged(length-1, removed: true);
     _list.length -= 1;
     return true;
   }
@@ -64,14 +62,14 @@ abstract class DataListView<V> extends Object with ChangeNotificationsMixin, Cha
 
   void _beforeChangingAll(){
     for(int i=0; i < _list.length; i++) {
-      _markChanged(i, new Change(this[i], undefined));
+      _markChanged(i);
       _removeOnDataChangeListener(i);
     }
   }
 
   void _afterChangingAll(){
     for(int i=0; i < _list.length; i++) {
-      _markChanged(i, new Change(undefined, this[i]));
+      _markChanged(i);
       if(_list[i] is ChangeNotificationsMixin)
         _addOnDataChangeListener(i, _list[i]);
     }
@@ -263,7 +261,7 @@ class DataList<V> extends DataListView<V> with ListMixin<V> implements List<V> {
 
 
 
-  void replaceRange(int start, int end, Iterable<V> newContents, {author: null}) {
+  void replaceRange(int start, int end, Iterable newContents, {author: null}) {
     this._rangeCheck(start, end);
     newContents = newContents.toList().map((E) => cleanify(E));
     int removeLength = end - start;
