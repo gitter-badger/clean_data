@@ -8,6 +8,10 @@ environment:
 documentation: http://cleandart.github.io/clean_data/
 dependencies:
   mock: any
+  persistent: any
 dev_dependencies:
   hop: any
   unittest: '>=0.11.0'
+dependency_overrides:
+  persistent:
+    path: /home/brandys11/VacuumLabs/persistent

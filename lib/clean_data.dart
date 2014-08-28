@@ -91,6 +91,7 @@ import "dart:core";
 import "dart:async";
 import "dart:collection";
 import "dart:math";
+import 'package:persistent/persistent.dart';
 
 part 'src/data_map.dart';
 part 'src/data_set.dart';
@@ -98,6 +99,8 @@ part 'src/data_reference.dart';
 part 'src/data_list.dart';
 part 'src/change_set.dart';
 part 'src/cleanify.dart';
+part 'src/cursor.dart';
+part 'src/map_cursor.dart';
 
 part 'src/hash_index.dart';
 part 'src/data_change_listeners_mixin.dart';
