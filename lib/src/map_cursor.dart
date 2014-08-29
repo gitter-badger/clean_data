@@ -9,7 +9,7 @@ class MapCursor<K, V> extends Cursor {
   }
 
 
-  PersistentMap get value => reference.lookupIn(path);
+  PersistentMap get value => super.value;
 
   _lookup(key) {
     _pathForF[_pathForF.length - 1] = key;
@@ -31,7 +31,10 @@ class MapCursor<K, V> extends Cursor {
    * Because null values are supported, one should use containsKey to
    * distinguish between an absent key and a null value.
    */
-  V operator[](key) => this._lookup(key);
+  V operator[](key) {
+    _pathForF[_pathForF.length - 1] = key;
+    return reference.cursorForIn(_pathForF, forPrimitives: false);
+  }
 
   /**
    * Returns true if there is no {key, value} pair in the data object.
@@ -111,24 +114,22 @@ class MapCursor<K, V> extends Cursor {
   /**
    * Removes [key] from the data object.
    */
-  V remove(K key) {
-    return _removeAll([key]).first;
+  void remove(K key) {
+    return _removeAll([key]);
   }
 
   /**
    * Remove all [keys] from the data object.
    */
-  Iterable<V> removeAll(List<K> keys) {
+  void removeAll(List<K> keys) {
     return _removeAll(keys);
   }
 
 
-  Iterable<V> _removeAll(List<K> keys) {
-    var removed = [];
+  void _removeAll(List<K> keys) {
     for (var key in keys) {
       this._remove(key);
     }
-    return removed;
   }
 
   void clear() {
@@ -139,7 +140,7 @@ class MapCursor<K, V> extends Cursor {
     value.forEachKeyValue(f);
   }
 
-  DataReference ref(K key) {
+  Cursor ref(K key) {
     throw 'Unsupported';
   }
 

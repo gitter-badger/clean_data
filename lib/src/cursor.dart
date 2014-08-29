@@ -4,6 +4,8 @@ class Cursor {
   final List path;
   final Reference reference;
 
+  get value => reference.lookupIn(path);
+
   Cursor(this.reference, this.path);
 
   Stream get onChange {
@@ -33,10 +35,10 @@ class Cursor {
     return _onBeforeRemovedController.stream;
   }
 
-  StreamController<dynamic> _onChangeController;
-  StreamController<Map> _onChangeSyncController;
-  StreamController<dynamic> _onBeforeAddedController;
-  StreamController<dynamic> _onBeforeRemovedController;
+  StreamController _onChangeController;
+  StreamController _onChangeSyncController;
+  StreamController _onBeforeAddedController;
+  StreamController _onBeforeRemovedController;
 
   dispose() {
     if(_onChangeController != null)
@@ -55,12 +57,23 @@ class Reference {
 
   Map _listeners = {};
   Map _listenersSync = {};
-  Reference();
+  Reference(this._data);
+  factory Reference.from(data) => new Reference(deepPersistent(data));
 
+  //TODO(jozo): get type of cursor according to data and check for existence of path
   Cursor get cursor => new Cursor(this, new List.from([]));
-  //TODO: should check for existence of path
-  Cursor cursorFor(key) => new Cursor(this, new List.from([key]));
-  Cursor cursorForIn(List path) => new Cursor(this, path);
+  /*Cursor*/ cursorFor(key, {forPrimitives: true}) =>
+      cursorForIn([key], forPrimitives: forPrimitives);
+  /*Cursor*/ cursorForIn(List path, {forPrimitives: true}) {
+    var val = lookupIn(path);
+    if(val is PersistentMap) return new MapCursor(this, path);
+    //TODO: if(val is PersistentVector) return new VectorCursor(this, path);
+    //TODO: if(val is PersistentSet) return new SetCursor(this, path);
+    else {
+      if(forPrimitives) return new Cursor(this, path);
+      else return val;
+    }
+  }
 
   lookupIn(Iterable path) {
     if(path.isEmpty) return _data;
@@ -72,58 +85,67 @@ class Reference {
       if(value is Persistent) _data = value;
       else throw new Exception('Only persistent data can be added to root');
     }
-    _data.insertIn(path, value);
-    _markChange(path);
+    value = deepPersistent(value);
+    var newData = _data.insertIn(path, value);
+    if(newData == _data) return;
+    _data = newData;
+    _markChangePath(path);
+    _notify();
   }
 
   removeIn(Iterable path) {
-    _data.deleteIn(path);
-    _markChange(path);
+    if(path.isEmpty) throw 'Cannot delete with empty path';
+    _data = _data.deleteIn(path);
+    _markChangePath(path);
+    _notify();
   }
 
-  _markChange(Iterable path) {
-    Iterable pathPart = path;
-    Iterator it = path.iterator;
-    Map map = _listenersSync;
+  _markDiffChanges(Map listeners, PersistentMap before, PersistentMap after) {
+    if(listeners == null || before == after) return;
+    listeners[_changed] = [];
+    before.keys.forEach((key) {
+      if(!after.containsKey(key)) return; //IF ADDED - nobody else to notify
+      _markDiffChanges(listeners[key], before[key], after[key]);
+      (listeners[_changed] as List).add(key);
+    });
 
+    //IF ADDED - nobody else to notify
+    if(listeners[_changed].isEmpty)
+      listeners[_changed] = null;
+  }
+
+  _markChangePath(Iterable path) {
     //Sync controllers
-    while(map != null && it.moveNext()) {
-      List controllers = map[_controllers];
-      if(controllers != null) {
-        controllers.forEach((StreamController s) => s.add(pathPart));
-      }
-      map = map[it.current];
-      pathPart = pathPart.skip(1);
-    }
-    List controllers = map[_controllers];
-    if(controllers != null) {
-      controllers.forEach((StreamController s) => s.add(pathPart));
-    }
-
+   _markPath(_listenersSync, path);
     //Async controllers
-    map = _listeners;
-    it = path.iterator;
+   _markPath(_listeners, path);
+  }
+
+  _markPath(Map map, Iterable path) {
+    Iterator it = path.iterator;
     while(map != null && it.moveNext()) {
       List changed = map[_changed];
       if(changed != null) {
         changed.add(it.current);
       }
       else map[_changed] = [it.current];
-
       map = map[it.current];
     }
+  }
 
+  _notify() {
+    _notifyListeners(_listenersSync);
     Timer.run(() {
       if(_listeners[_changed] != null) {
-        _notify(_listeners);
+        _notifyListeners(_listeners);
       }
     });
   }
 
-  _notify(Map map) {
+  _notifyListeners(Map map) {
     if(map == null) return;
 
-    (map[_changed] as List).forEach((e) => _notify(map[e]));
+    (map[_changed] as List).forEach((e) => _notifyListeners(map[e]));
     map[_changed] == null;
 
     if(map[_controllers] != null)
@@ -141,12 +163,17 @@ class Reference {
   }
 }
 
-_insertIn(Map map, Iterable path, _KEY key, dynamic value) {
+Map _findIn(Map map, Iterable path, {create: false}) {
   Iterator it = path.iterator;
-  while(it.moveNext()){
-   if(map.putIfAbsent(it.current, () => {}));
-   map = map[it.current];
-  }
+   while(it.moveNext() && map != null){
+      if(create) if(map.putIfAbsent(it.current, () => {}));
+      map = map[it.current];
+   }
+   return map;
+}
+
+_insertIn(Map map, Iterable path, _KEY key, dynamic value) {
+  map = _findIn(map, path, create: true);
   map.containsKey(_controllers) ?
         (map[_controllers] as List).add(value)
       :
