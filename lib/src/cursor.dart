@@ -1,25 +1,22 @@
 part of clean_data;
 
-class Cursor extends Object with ChangeNotificationsMixin, ChangeChildNotificationsMixin {
+class Cursor {
   final List path;
-  final Reference ref;
+  final Reference reference;
 
-  factory Cursor() {
-    return new Cursor.forRef(new Reference(), []);
-  }
-  Cursor.forRef(this.ref, this.path);
+  Cursor(this.reference, this.path);
 
   Stream get onChange {
     if(_onChangeController == null) {
       _onChangeController = new StreamController.broadcast();
-      ref.listenIn(path, _onChangeController, false);
+      reference.listenIn(path, _onChangeController, false);
     }
     return _onChangeController.stream;
   }
   Stream get onChangeSync  {
       if(_onChangeSyncController == null) {
         _onChangeSyncController = new StreamController.broadcast(sync: true);
-        ref.listenIn(path, _onChangeSyncController, true);
+        reference.listenIn(path, _onChangeSyncController, true);
       }
       return _onChangeSyncController.stream;
     }
@@ -43,9 +40,9 @@ class Cursor extends Object with ChangeNotificationsMixin, ChangeChildNotificati
 
   dispose() {
     if(_onChangeController != null)
-      _onChangeController.close().then((ref.stopListenIn(path, _onChangeController, false)));
+      _onChangeController.close().then((reference.stopListenIn(path, _onChangeController, false)));
     if(_onChangeSyncController != null)
-      _onChangeSyncController.close().then((ref.stopListenIn(path, _onChangeSyncController, true)));
+      _onChangeSyncController.close().then((reference.stopListenIn(path, _onChangeSyncController, true)));
 
     _onBeforeAddedController.close();
     _onBeforeRemovedController.close();
@@ -60,10 +57,10 @@ class Reference {
   Map _listenersSync = {};
   Reference();
 
-  Cursor get cursor => new Cursor.forRef(this, new List.from([]));
+  Cursor get cursor => new Cursor(this, new List.from([]));
   //TODO: should check for existence of path
-  Cursor cursorFor(key) => new Cursor.forRef(this, new List.from([key]));
-  Cursor cursorForIn(List path) => new Cursor.forRef(this, path);
+  Cursor cursorFor(key) => new Cursor(this, new List.from([key]));
+  Cursor cursorForIn(List path) => new Cursor(this, path);
 
   lookupIn(Iterable path) {
     if(path.isEmpty) return _data;
@@ -75,21 +72,16 @@ class Reference {
       if(value is Persistent) _data = value;
       else throw new Exception('Only persistent data can be added to root');
     }
-    Option opt = _data.lookupIn(path.take(path.length-1));
-    if(opt.isDefined) {
-      _markChange(path, 'add');
-    }
-    else {
-      _markChange(path, 'change');
-    }
     _data.insertIn(path, value);
+    _markChange(path);
   }
 
-  removeIn(Iterable path, value) {
-    throw 'Unsupported';
+  removeIn(Iterable path) {
+    _data.deleteIn(path);
+    _markChange(path);
   }
 
-  _markChange(Iterable path, String action) {
+  _markChange(Iterable path) {
     Iterable pathPart = path;
     Iterator it = path.iterator;
     Map map = _listenersSync;
@@ -168,3 +160,4 @@ _removeIn(Map map, Iterable path, _controllers) {
 class _KEY {}
 final _controllers = new _KEY();
 final _changed = new _KEY();
+final _none = new _KEY();
