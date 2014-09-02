@@ -10,6 +10,7 @@ class MapCursor<K, V> extends Cursor {
 
 
   PersistentMap get value => super.value;
+  set value(newValue) => reference.changeIn(path, newValue);
 
   _lookup(key) {
     _pathForF[_pathForF.length - 1] = key;
@@ -141,7 +142,8 @@ class MapCursor<K, V> extends Cursor {
   }
 
   Cursor ref(K key) {
-    throw 'Unsupported';
+    _pathForF[_pathForF.length - 1] = key;
+    return reference.cursorForIn(_pathForF, forPrimitives: true);
   }
 
   putIfAbsent(K key, ifAbsent()) {

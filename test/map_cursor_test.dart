@@ -59,5 +59,47 @@ void main() {
       map['hello'].remove('persistent');
       expect(() => map['hello']['persistent'], throws);
     });
+
+    group('changes', () {
+      test('listening', () {
+        Reference ref = new Reference.from({'hello': { 'persistent': 'data'}, 'bye': 'clean_data'});
+        MapCursor map = new MapCursor(ref, []);
+        map.onChange.listen(expectAsync((_) => null));
+        map['hello'].onChange.listen(expectAsync((_) => null));
+        map.ref('bye').onChange.listen(expectAsync((_) => null, count: 0));
+        map['hello'].ref('persistent').onChange.listen(expectAsync((_) => null));
+        map['hello']['persistent'] = 'listenable data';
+      });
+
+      test('listening sync', () {
+        Reference ref = new Reference.from({'hello': { 'persistent': 'data'}, 'bye': 'clean_data'});
+        MapCursor map = new MapCursor(ref, []);
+        map.onChangeSync.listen(expectAsync((_) => null));
+        map['hello'].onChangeSync.listen(expectAsync((_) => null));
+        map.ref('bye').onChangeSync.listen(expectAsync((_) => null, count: 0));
+        map['hello'].ref('persistent').onChangeSync.listen(expectAsync((_) => null));
+        map['hello']['persistent'] = 'listenable data';
+      });
+
+      test('listening sync, deep change', () {
+        Reference ref = new Reference.from({'hello': { 'persistent': 'data'}, 'bye': 'clean_data'});
+        MapCursor map = new MapCursor(ref, []);
+        map.onChangeSync.listen(expectAsync((_) => null));
+        map['hello'].onChange.listen(expectAsync((_) => null));
+        map.ref('bye').onChange.listen(expectAsync((_) => null, count: 0));
+        map['hello'].ref('persistent').onChange.listen(expectAsync((_) => null));
+        map.value = {'hello': { 'persistent': 'listenable data'}, 'bye': 'clean_data'};
+      });
+
+      test('listening sync, deep change', () {
+        Reference ref = new Reference.from({'hello': { 'persistent': 'data'}, 'bye': 'clean_data'});
+        MapCursor map = new MapCursor(ref, []);
+        map.onChangeSync.listen(expectAsync((_) => null));
+        map['hello'].onChangeSync.listen(expectAsync((_) => null));
+        map.ref('bye').onChangeSync.listen(expectAsync((_) => null, count: 0));
+        map['hello'].ref('persistent').onChangeSync.listen(expectAsync((_) => null));
+        map.value = {'hello': { 'persistent': 'listenable data'}, 'bye': 'clean_data'};
+      });
+    });
   });
 }
